@@ -1,0 +1,182 @@
+{
+    "privileges": [
+        {
+            "name": "WebAccess",
+            "essential": true,
+            "parameters": [ "https://*.microsoft.com", "http://*.microsoft.com", "https://*.openstreetmap.org", "http://*.openstreetmap.org",  "https://*.leafletjs.com", "http://*.leafletjs.com", "https://*.osm.org", "http://*.osm.org"]
+        }
+    ],
+    "dataRoles": [
+        {
+            "displayName": "Marker Tooltips",
+            "name": "tooltips",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Marker Color Field",
+            "description": "Use either Word (e.g. Blue) or Hex value in Column to set color of point",
+            "name": "markercolor",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Marker Radius Field",
+            "description": "Set a value for size of the Point in Column",
+            "name": "markerradius",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Latitude",
+            "description": "Latitude of Points if you just Want to use Markers",
+            "name": "latitude",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Longitude",
+            "description": "Longitude of Points if you just Want to use Markers",
+            "name": "longitude",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "To Latitude",
+            "description": "Latitude of End Points if you want to show a path",
+            "name": "tolatitude",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "To Longitude",
+            "description": "Latitude of End Points if you want to show a path",
+            "name": "tolongitude",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Line Tooltips",
+            "description": "Values to show when hovering over a line",
+            "name": "linetooltips",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Line Color Field",
+            "description": "Use either Word (e.g. Blue) or Hex value in Column to set color of point",
+            "name": "linecolor",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Line Width Field",
+            "description": "Set Numeric with of Line to show a value",
+            "name": "linewidth",
+            "kind": "Grouping"
+        }
+
+    ],
+    "objects": {
+        "leafletMap": {
+            "displayName": "Leaflet Map Properties",
+            "properties": {
+                "defaultMarkerColor": {
+                    "displayName": "Default color for marker",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "defaultLineColor": {
+                    "displayName": "Default color for lines-Use a Different Column than For Markers",
+                    "type": {
+                        "fill": {
+                            "solid": {
+                                "color": true
+                            }
+                        }
+                    }
+                },
+                "markerType": {
+                    "displayName": "Type of Marker to Show",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "circleMarker",
+                                "displayName": "Circle Marker",
+                                "displayNameKey": "Visual_Marker_Circle"
+                            },
+                            {
+                                "value": "customMarker1",
+                                "displayName": "Custom Marker 1",
+                                "displayNameKey": "Visual_Marker_Custom1"
+                            }
+                        ]
+                    }
+                },
+                "zoomToFit": {
+                    "displayName": "Zoom map to fit data points",
+                    "type": {
+                        "bool": true
+                    }
+                }
+            }
+        }
+    },
+    "dataViewMappings": [
+        {
+            "table": {
+                "rows": {
+                    "select": [
+                        {
+                            "for": {
+                                "in": "tooltips"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "latitude"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "longitude"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tolatitude"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "tolongitude"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "markercolor"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "linecolor"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "markerradius"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "linewidth"
+                            }
+                        },
+                        {
+                            "for": {
+                                "in": "linetooltips"
+                            }
+                        }
+
+                    ]
+                }
+            }
+        }
+    ]
+}

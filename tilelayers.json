@@ -1,0 +1,10 @@
+{	"_comment": "Make sure to have the correct Tile. The SIPR Works correctly in this implementation. ",
+    "currentTargetEnvironment": "sipr",
+    "targetEnvironments": {
+        "dev": [
+            "http://{s}.tile.osm.org/{z}/{x}/{y}.png"
+        ],
+        "nipr": ["https://www.openstreetmap.org/#map=8/47.714/13.349"],
+        "sipr": ["http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"]
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "visual": {
+        "name": "pbivizleafletmap",
+        "displayName": "Show Routes on Leaflet Map ",
+        "guid": "pbivizleafletmap",
+        "visualClassName": "Visual",
+        "version": "1.0.21",
+        "description": "Render datasets with LAT/LONG",
+        "supportUrl": "https://www.goldbergcf.com",
+        "gitHubUrl": "https://github.com/jdgamsterdam/pbiviz-leafletmap"
+    },
+    "apiVersion": "4.7.0",
+    "author": {
+        "name": "Jon Goldberg",
+        "email": "jdgamsterdam@gmail.com"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": [],
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
+}
