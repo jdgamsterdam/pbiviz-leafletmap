@@ -3,7 +3,7 @@
         {
             "name": "WebAccess",
             "essential": true,
-            "parameters": [ "https://*.microsoft.com", "http://*.microsoft.com", "https://*.openstreetmap.org", "http://*.openstreetmap.org",  "https://*.leafletjs.com", "http://*.leafletjs.com", "https://*.osm.org", "http://*.osm.org"]
+            "parameters": [ "https://*.microsoft.com", "http://*.microsoft.com", "https://*.openstreetmap.org", "http://*.openstreetmap.org",  "https://*.leafletjs.com", "http://*.leafletjs.com", "https://*.osm.org", "http://*.osm.org","https://localhost", "http://localhost","https://*.w3.org", "http://*.w3.org"]
         }
     ],
     "dataRoles": [
@@ -14,7 +14,7 @@
         },
         {
             "displayName": "Marker Color Field",
-            "description": "Use either Word (e.g. Blue) or Hex value in Column to set color of point",
+            "description": "Use either Word (e.g. Blue) or Hex value in Column to set color of point. This is only used for circle markers or default icon",
             "name": "markercolor",
             "kind": "Grouping"
         },
@@ -22,31 +22,56 @@
             "displayName": "Marker Radius Field",
             "description": "Set a value for size of the Point in Column",
             "name": "markerradius",
-            "kind": "Grouping"
+            "kind": "Grouping",
+            "requiredTypes": [
+                {
+                    "numeric": true
+                }
+            ]
         },
         {
             "displayName": "Latitude",
             "description": "Latitude of Points if you just Want to use Markers",
             "name": "latitude",
-            "kind": "Grouping"
+            "kind": "Grouping",
+            "requiredTypes": [
+                {
+                    "numeric": true
+                }
+            ]
         },
         {
             "displayName": "Longitude",
             "description": "Longitude of Points if you just Want to use Markers",
             "name": "longitude",
-            "kind": "Grouping"
+            "kind": "Grouping",
+            "requiredTypes": [
+                {
+                    "numeric": true
+                }
+            ]
         },
         {
             "displayName": "To Latitude",
             "description": "Latitude of End Points if you want to show a path",
             "name": "tolatitude",
-            "kind": "Grouping"
+            "kind": "Grouping",
+            "requiredTypes": [
+                {
+                    "numeric": true
+                }
+            ]
         },
         {
             "displayName": "To Longitude",
             "description": "Latitude of End Points if you want to show a path",
             "name": "tolongitude",
-            "kind": "Grouping"
+            "kind": "Grouping",
+            "requiredTypes": [
+                {
+                    "numeric": true
+                }
+            ]
         },
         {
             "displayName": "Line Tooltips",
@@ -65,7 +90,13 @@
             "description": "Set Numeric with of Line to show a value",
             "name": "linewidth",
             "kind": "Grouping"
-        }
+        },
+        {
+            "displayName": "Icon From Table",
+            "description": "Have a Different SVG in Each Row will use Default if nothing in Row",
+            "name": "iconsvgfield",
+            "kind": "Grouping"
+         }
 
     ],
     "objects": {
@@ -73,7 +104,8 @@
             "displayName": "Leaflet Map Properties",
             "properties": {
                 "defaultMarkerColor": {
-                    "displayName": "Default color for marker",
+                    "displayName": "Default color for circle marker",
+                    "description": "This is only used for circle markers or Default icon",
                     "type": {
                         "fill": {
                             "solid": {
@@ -83,7 +115,8 @@
                     }
                 },
                 "defaultLineColor": {
-                    "displayName": "Default color for lines-Use a Different Column than For Markers",
+                    "displayName": "Default color for lines",
+                    "description": "Use a Different Column than For Markers",
                     "type": {
                         "fill": {
                             "solid": {
@@ -103,8 +136,15 @@
                             },
                             {
                                 "value": "customMarker1",
-                                "displayName": "Custom Marker 1",
+                                "displayName": "Default Icon",
+                                "description": "Basic Custom Icon",
                                 "displayNameKey": "Visual_Marker_Custom1"
+                            },
+                            {
+                                "value": "markerFromField",
+                                "displayName": "Icon from Field (Column) In Sheet",
+                                "description": "SVG Field Do not have any ajdustable fields or Line Breaks in the SVG. Make sure the Definition uses single Quotes,  - See Help",
+                                "displayNameKey": "Visual_Marker_URL"
                             }
                         ]
                     }
@@ -171,6 +211,12 @@
                         {
                             "for": {
                                 "in": "linetooltips"
+                            }
+                        }
+                        ,
+                        {
+                            "for": {
+                                "in": "iconsvgfield"
                             }
                         }
 

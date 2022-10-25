@@ -4,8 +4,8 @@
         "displayName": "Show Routes on Leaflet Map ",
         "guid": "pbivizleafletmap",
         "visualClassName": "Visual",
-        "version": "1.0.21",
-        "description": "Render datasets with LAT/LONG",
+        "version": "1.0.36",
+        "description": "Render datasets with LAT/LONG has Flexibility for Icons or Colors.  Please go to the readme at the GITHUB Repository for more information",
         "supportUrl": "https://www.goldbergcf.com",
         "gitHubUrl": "https://github.com/jdgamsterdam/pbiviz-leafletmap"
     },

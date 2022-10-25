@@ -11,7 +11,4 @@ export class LeafletMapSettings {
   public defaultLineColor: string = "";
   public markerType: string = "";
   public zoomToFit: boolean = true;
-  
-  
-  
 }

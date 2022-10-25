@@ -1,5 +1,4 @@
 "use strict";
-
 import "core-js";
 import "leaflet/dist/leaflet.css";
 import "./../style/visual.less";
@@ -14,11 +13,10 @@ import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnume
 import * as L from 'leaflet';
 import * as tileLayers from "../tilelayers.json";
 import { VisualSettings } from "./settings";
-import { myIcon as myIcon }  from "./graphics/icons";
-
-//const iconsvgdata = '<svg version="1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 149 178"><path fill="{mapIconColor}" stroke="#FFF" stroke-width="6" stroke-miterlimit="10" d="M126 23l-6-6A69 69 0 0 0 74 1a69 69 0 0 0-51 22A70 70 0 0 0 1 74c0 21 7 38 22 52l43 47c6 6 11 6 16 0l48-51c12-13 18-29 18-48 0-20-8-37-22-51z"/><circle fill="{mapIconColorInnerCircle}" cx="74" cy="75" r="61"/><circle fill="#FFF" cx="74" cy="75" r="{pinInnerCircleRadius}"/></svg>'
-
-const iconsvgdata = myIcon;
+//For wildCard
+import { dataViewWildcard } from "powerbi-visuals-utils-dataviewutils";
+import VisualEnumerationInstanceKinds = powerbi.VisualEnumerationInstanceKinds;
+import * as IconFunctions from "./graphics/icons";
 
 interface Plot {
     tooltips: string;
@@ -32,6 +30,7 @@ interface Plot {
     linewidth: number;
     linetooltips: any;
     markerType: any;
+    iconsvgfield: any;
 }
 
 export class Visual implements IVisual {
@@ -55,7 +54,7 @@ export class Visual implements IVisual {
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         this.resizeMap(options);
         this.plots = <Plot[]>this.parseData(options);
-        this.drawCircleMarkers();
+        this.drawMarkers();
         this.drawLines();
     }
 
@@ -82,50 +81,71 @@ export class Visual implements IVisual {
         this.target.append(div);
     }
 
-    private drawCircleMarkers() {
+    private drawMarkers() {
         if (this.markerLayer) this.map.removeLayer(this.markerLayer);
         //Need to Put the new big thing in the settings.ts
         const { zoomToFit, defaultMarkerColor, markerType } = this.settings.leafletMap;
 
-        const markers = this.plots.map(function ({tooltips, latitude, longitude, markercolor, markerradius}) {
+        const markers = this.plots.map(function ({tooltips, latitude, longitude, markercolor, markerradius, iconsvgfield}) {
             const latlng = L.latLng([latitude, longitude]);
-            const markerOptions: L.CircleMarkerOptions = { 
-                color: markercolor || (defaultMarkerColor || 'Black'),
-                radius: markerradius || 10,
-                fillOpacity: 0.5
+            //Decide What to Return
+            switch (markerType) {
+                default:
+                    //Circle Marker
+                    const defaultmarkerOptions: L.CircleMarkerOptions = { 
+                        color: markercolor || (defaultMarkerColor || 'Black'),
+                        radius: markerradius || 10,
+                        fillOpacity: 0.5
+                    };
+                    let defaultmarker = L.circleMarker(latlng, defaultmarkerOptions);
+                    defaultmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    return defaultmarker;
+                case 'circleMarker':
+                    const circlemarkerOptions: L.CircleMarkerOptions = { 
+                        color: markercolor || (defaultMarkerColor || 'Black'),
+                        radius: markerradius || 10,
+                        fillOpacity: 0.5
+                    };
+                    let basiccirclemarker = L.circleMarker(latlng, circlemarkerOptions);
+                    basiccirclemarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    return basiccirclemarker;
+                case 'customMarker1':
+                    //This needs to be myIcon since the icon settings are built into the SVG
+                    const iconsvgdata = IconFunctions.myIcon;
+                    var iconSettings = {
+                        mapIconUrl: ( iconsvgdata ),
+                        mapIconColor: ( markercolor || '#cc756b'),
+                        mapIconColorInnerCircle: '#fff',
+                        pinInnerCircleRadius:48
+                    };
+                    // icon normal state
+                    var divIcon = L.divIcon({
+                        className: "leaflet-data-marker",
+                        html: L.Util.template(iconSettings.mapIconUrl, iconSettings), //.replace('#','%23'),
+                        iconAnchor  : [12, 32],
+                        iconSize    : [25, 30],
+                        popupAnchor : [0, -28]
+                    });
+                    let iconmarker = L.marker(latlng,{icon: divIcon });
+                    iconmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    return iconmarker;         
+                case 'markerFromField':                   
+                    //Icons should not have any custom fields built in (I could add an SVG Settings field as well but skip that for now)
+
+                    var svgiconSettings = {
+                        mapIconUrl: (iconsvgfield)
+                        };
+                    var divSVGIcon = L.divIcon({
+                        className: "leaflet-data-marker",
+                        html: L.Util.template(svgiconSettings.mapIconUrl, svgiconSettings),
+                        iconAnchor  : [12, 32],
+                        iconSize    : [25, 30],
+                        popupAnchor : [0, -28]
+                    });       
+                    let svgmarker = L.marker(latlng,{icon: divSVGIcon });
+                    svgmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    return svgmarker;
             };
-            
-            var iconSettings = {
-                mapIconUrl: iconsvgdata,
-                mapIconColor: '#cc756b',
-                mapIconColorInnerCircle: '#fff',
-                pinInnerCircleRadius:48
-            };
-
-            // icon normal state
-            var divIcon = L.divIcon({
-                className: "leaflet-data-marker",
-                html: L.Util.template(iconSettings.mapIconUrl, iconSettings), //.replace('#','%23'),
-                iconAnchor  : [12, 32],
-                iconSize    : [25, 30],
-                popupAnchor : [0, -28]
-            });
-
-            let iconmarker = L.marker(latlng,{icon: divIcon });
-
-            let marker = L.circleMarker(latlng, markerOptions);
-
-            marker.bindPopup(tooltips || '[Drag a field onto Tooltips]');
-            marker.on('mouseover', function (evt) {
-                marker.openPopup();
-            });
-
-            if (markerType == "circleMarker") {
-               return marker;
-            }
-            else {
-                return iconmarker;
-            }
         });
 
         // place markers on map
@@ -156,7 +176,7 @@ export class Visual implements IVisual {
             };
 
             let pmarker = L.polyline(linelist,lineOptions);
-            pmarker.bindTooltip( linetooltips || ' ');
+            pmarker.bindTooltip(linetooltips || '[Drag a field onto Line Tooltips]');
 //            bindTooltip(<String|HTMLElement|Function|Tooltip> content, <Tooltip options> options?)
             return pmarker;
         });
@@ -165,7 +185,6 @@ export class Visual implements IVisual {
         this.polylineLayer = L.layerGroup(lines);
         this.map.addLayer(this.polylineLayer);
     }
-
 
 
     private getTileLayers(): string[] {
@@ -211,6 +230,37 @@ export class Visual implements IVisual {
      *
      */
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+        let objectName = options.objectName;
+        let objectEnumeration: VisualObjectInstance[] = [];
+
+
+        //Start Try to add Conditional
+        if (!this.settings ||
+            !this.settings.leafletMap) {
+            return objectEnumeration;
+        }
+
+        switch (objectName) {
+            case 'leafletMap':
+                objectEnumeration.push({
+                    objectName: objectName,
+                    //Need to put all the fields you want to show in Propertes and the adjusted ones also in Instance Kind
+                    properties: {
+                        defaultMarkerColor: this.settings.leafletMap.defaultMarkerColor,
+                        defaultLineColor: this.settings.leafletMap.defaultLineColor,
+                        markerType: this.settings.leafletMap.markerType,
+                        zoomToFit: this.settings.leafletMap.zoomToFit
+                    },
+                    propertyInstanceKind: {
+                        defaultLineColor: VisualEnumerationInstanceKinds.ConstantOrRule
+                    },
+                    altConstantValueSelector: null,
+                    selector: dataViewWildcard.createDataViewWildcardSelector(dataViewWildcard.DataViewWildcardMatchingOption.InstancesAndTotals)
+                });
+                break;
+        };
+        //return objectEnumeration;
+        //End add conditional
         return VisualSettings.enumerateObjectInstances(this.settings || VisualSettings.getDefault(), options);
     }
 }

@@ -10,6 +10,19 @@ Features
 Data bound custom visual that can be used with Datasets with LAT/LONG coordinates. 
 Each Point Can also be Connected to another point To use as routes. 
 
+## USAGE
+This is pretty straight forward. The only thing that needs a bit of care is using your custom icons.  I have included a PowerBi M query   (getremoteicon.m) to get an icon from an (open) remote source.
+
+The nice thing about my solution is , in Theory, you could have a different icon for each DataPoint.  I will eventually add the ability to have a picture as well at PopUps or Data Points.
+
+The main things to keep in mind if manually copying the SVG data into your source data are: 
+    1. make sure there are no line feeds (This may or may not work but seems to cause some issues.)
+    2. Make sure the internal SVG are single quotes. Take a look at the definition for myIcon2 in the src/graphics/icons.ts file. Do NOT have adjustable parameters like the first const(myIcon). Eventually I will add the ability to send JSON definition along with the SVG Data.  
+
+The example PBIX has a data transformation for copying the top row to the whole column. The Basic idea is:
+    // Copy Down The Column
+    #"Replaced Value" = Table.ReplaceValue(#"Changed Type",null,Table.First(#"Changed Type")[MyIcon],Replacer.ReplaceValue,{"MyIcon"}),
+
 
 ## Create a tilelayers.json in project root directory
 This file will not be checked into your source control.  This file should have the following format.
