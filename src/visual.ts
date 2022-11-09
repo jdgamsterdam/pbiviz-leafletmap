@@ -20,17 +20,22 @@ import * as IconFunctions from "./graphics/icons";
 
 interface Plot {
     tooltips: string;
+    markerlabel: string;
     latitude: number;
     longitude: number;
     tolatitude: number;
     tolongitude: number;
     markercolor: string;
+    endmarkercolor: string;   
     linecolor: string;
     markerradius: number;
     linewidth: number;
-    linetooltips: any;
+    linetooltips: string;
     markerType: any;
+    endmarkerType: any;
     iconsvgfield: any;
+    endiconsvgfield: any;
+    iconOptionsFromField: string;
 }
 
 export class Visual implements IVisual {
@@ -41,8 +46,15 @@ export class Visual implements IVisual {
     private plots: Plot[];
     private markerLayer: L.LayerGroup<[L.CircleMarker,L.DivIcon]>;
     private polylineLayer: L.LayerGroup<L.Polyline>;
+    private labelLayer: L.LayerGroup<L.DivIcon>;
+    private endmarkerLayer: L.LayerGroup<[L.CircleMarker,L.DivIcon]>;
+    private element: HTMLElement;
+    private isLandingPageOn: Boolean;
+    private LandingPageRemoved: Boolean;
+    private LandingPage: d3.Selection<any,any,any,any>;
 
     constructor(options: VisualConstructorOptions) {
+        this.element = options.element;
         if (!document) { return; }
         this.target = options.element;
         //this.target.innerHTML = 'TEST' + JSON.stringify(window.location);
@@ -54,13 +66,17 @@ export class Visual implements IVisual {
         this.settings = Visual.parseSettings(options && options.dataViews && options.dataViews[0]);
         this.resizeMap(options);
         this.plots = <Plot[]>this.parseData(options);
-        this.drawMarkers();
+        //Do End Before Start Since if there are no end points the Start Will Cover the End Points with a Blank
+        this.drawMarkers("end");
+        this.drawMarkers("start");
+        this.drawLabels();
         this.drawLines();
     }
 
     public destroy() {
         this.map.remove();
     }
+
 
     private configureLeaflet() {
         // create L.Map off of the <div>
@@ -81,76 +97,117 @@ export class Visual implements IVisual {
         this.target.append(div);
     }
 
-    private drawMarkers() {
-        if (this.markerLayer) this.map.removeLayer(this.markerLayer);
+    private drawMarkers(MarkerPosition: string) {
+        if (MarkerPosition == "start") {
+            if (this.markerLayer) this.map.removeLayer(this.markerLayer);
+        }
+        else {
+            if (this.endmarkerLayer) this.map.removeLayer(this.endmarkerLayer);
+        }
         //Need to Put the new big thing in the settings.ts
-        const { zoomToFit, defaultMarkerColor, markerType } = this.settings.leafletMap;
-
-        const markers = this.plots.map(function ({tooltips, latitude, longitude, markercolor, markerradius, iconsvgfield}) {
-            const latlng = L.latLng([latitude, longitude]);
-            //Decide What to Return
-            switch (markerType) {
-                default:
-                    //Circle Marker
-                    const defaultmarkerOptions: L.CircleMarkerOptions = { 
-                        color: markercolor || (defaultMarkerColor || 'Black'),
-                        radius: markerradius || 10,
-                        fillOpacity: 0.5
-                    };
-                    let defaultmarker = L.circleMarker(latlng, defaultmarkerOptions);
-                    defaultmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
-                    return defaultmarker;
+        const { zoomToFit, defaultMarkerColor, markerType, endmarkerType, defaultMarkerSize, defaultMarkerOpacity } = this.settings.leafletMap;
+        const markers = this.plots.map(function ({tooltips, latitude, longitude, tolatitude, tolongitude, markercolor, endmarkercolor, markerradius, iconsvgfield, endiconsvgfield, iconOptionsFromField}) {
+            var MarkerForSwitch=markerType;
+            //Set Initial LatLng
+            var latlng = L.latLng([0, 0])
+            if (MarkerPosition != "start") {
+                //These are the end points now (if not "start") but could be used to do ICONS in the middle of lines for example
+                latitude=tolatitude;
+                longitude=tolongitude;
+                MarkerForSwitch=endmarkerType;
+            }
+            if (!latitude || !longitude){
+                //One of the items is missing so return a dummy point
+                let dummymarkerOptions: L.CircleMarkerOptions = { 
+                    color: "Blue",
+                    radius: 0,
+                    fillOpacity: 0
+                };
+                latlng = L.latLng([0,0]);
+                let dummymarker=L.circleMarker(latlng,dummymarkerOptions);
+                return dummymarker
+            }
+            else{
+                latlng = L.latLng([latitude, longitude]);
+            }
+            //Decide What to Return if not null
+            switch (MarkerForSwitch) {
+                default:    
                 case 'circleMarker':
-                    const circlemarkerOptions: L.CircleMarkerOptions = { 
-                        color: markercolor || (defaultMarkerColor || 'Black'),
-                        radius: markerradius || 10,
-                        fillOpacity: 0.5
+                    let circlemarkerOptions: L.CircleMarkerOptions = { 
+                        color: markercolor || defaultMarkerColor,
+                        radius: markerradius || defaultMarkerSize,
+                        fillOpacity:  defaultMarkerOpacity / 100
                     };
-                    let basiccirclemarker = L.circleMarker(latlng, circlemarkerOptions);
-                    basiccirclemarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    if (MarkerPosition != "start") {
+                        circlemarkerOptions["color"]=endmarkercolor || defaultMarkerColor;
+                    }
+
+                    var basiccirclemarker = L.circleMarker(latlng, circlemarkerOptions);
+                    var mytooltip = (tooltips || 'No Tool Tip');
+                    basiccirclemarker.bindTooltip(String(mytooltip));
                     return basiccirclemarker;
                 case 'customMarker1':
                     //This needs to be myIcon since the icon settings are built into the SVG
                     const iconsvgdata = IconFunctions.myIcon;
-                    var iconSettings = {
-                        mapIconUrl: ( iconsvgdata ),
-                        mapIconColor: ( markercolor || '#cc756b'),
-                        mapIconColorInnerCircle: '#fff',
-                        pinInnerCircleRadius:48
-                    };
+                    var baseiconSettings = { mapIconUrl: ( iconsvgdata ) };
+                    let defaulticonOptions='{"mapIconColor": "#cc756b", "mapIconColorInnerCircle":"'+ (markercolor || defaultMarkerColor)+'", "pinInnerCircleRadius":48}';
+
+                    // Get icon Field Options from default if no field is supplied
+                    var iconCustomFieldOptions = iconOptionsFromField || defaulticonOptions;
+                    var iconCustomFieldOptionsJSON=JSON.parse(iconCustomFieldOptions);  
+                    var iconSettings=Object.assign(baseiconSettings,iconCustomFieldOptionsJSON);
+
                     // icon normal state
                     var divIcon = L.divIcon({
                         className: "leaflet-data-marker",
                         html: L.Util.template(iconSettings.mapIconUrl, iconSettings), //.replace('#','%23'),
-                        iconAnchor  : [12, 32],
-                        iconSize    : [25, 30],
+                        iconAnchor  : [1, 1],
+                        iconSize    : [markerradius || defaultMarkerSize, markerradius || defaultMarkerSize],
                         popupAnchor : [0, -28]
                     });
-                    let iconmarker = L.marker(latlng,{icon: divIcon });
-                    iconmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    var iconmarker = L.marker(latlng,{icon: divIcon });
+                    var mytooltip = (tooltips || 'No Tool Tip');
+                    iconmarker.bindTooltip(String(mytooltip));
                     return iconmarker;         
                 case 'markerFromField':                   
-                    //Icons should not have any custom fields built in (I could add an SVG Settings field as well but skip that for now)
+                    if (MarkerPosition == "start") {
+                        var basesvgiconSettings = { mapIconUrl: (iconsvgfield) };
+                    }
+                    else {
+                        var basesvgiconSettings = { mapIconUrl: (endiconsvgfield) };
+                    }
 
-                    var svgiconSettings = {
-                        mapIconUrl: (iconsvgfield)
-                        };
+                    var defaulticonFieldOptions='{}';    
+
+                    // Get icon Field Options from default if no field is supplied
+                    var iconFieldOptions = iconOptionsFromField || defaulticonFieldOptions; 
+                    var jsoniconOptions=JSON.parse(iconFieldOptions);
+                    var svgiconSettings=Object.assign(basesvgiconSettings,jsoniconOptions);    
                     var divSVGIcon = L.divIcon({
                         className: "leaflet-data-marker",
                         html: L.Util.template(svgiconSettings.mapIconUrl, svgiconSettings),
-                        iconAnchor  : [12, 32],
-                        iconSize    : [25, 30],
+                        iconAnchor  : [1, 1],
+                        iconSize    : [markerradius || defaultMarkerSize, markerradius || defaultMarkerSize],
                         popupAnchor : [0, -28]
                     });       
-                    let svgmarker = L.marker(latlng,{icon: divSVGIcon });
-                    svgmarker.bindTooltip(tooltips || '[Drag a field onto Tooltips]');
+                    var svgmarker = L.marker(latlng,{icon: divSVGIcon });
+                    var mytooltip = (tooltips || 'No Tool Tip');
+                    svgmarker.bindTooltip(String(mytooltip));
                     return svgmarker;
             };
         });
 
         // place markers on map
-        this.markerLayer = L.layerGroup(markers);
-        this.map.addLayer(this.markerLayer);
+
+        if (MarkerPosition == "start") {
+            this.markerLayer = L.layerGroup(markers);
+            this.map.addLayer(this.markerLayer);
+        }
+        else {
+            this.endmarkerLayer = L.layerGroup(markers);
+            this.map.addLayer(this.endmarkerLayer);
+        }
 
         // zoom out so map shows all points
         if (zoomToFit) {
@@ -159,25 +216,57 @@ export class Visual implements IVisual {
         }
     }
 
+    private drawLabels() {
+        if (this.labelLayer) this.map.removeLayer(this.labelLayer);
+        const { defaultMarkerSize } = this.settings.leafletMap;
+        //Add Labels for all marker Types
+        const labelmarkers = this.plots.map(function ({latitude, longitude, markerlabel, markerradius}) {
+            //Note for Simple Text SVG the y must be the same as the point size (or bigger) or the text will not show. 
+            const defaultlabelsvg='<svg xmlns="http://www.w3.org/2000/svg"><text x="5" y="15" style="font-size: 15px">'+(markerlabel || ' ')+'</text></svg>';
+            var labelsvg=defaultlabelsvg;         
+            const labellatlng = L.latLng([latitude, longitude]);
+            var baselabelSettings = { mapIconUrl: ( labelsvg ) };
+            var labeliconSettings=Object.assign(baselabelSettings);
+            var labelIcon = L.divIcon({
+                  className: "text-below-marker",
+                html: L.Util.template(labeliconSettings.mapIconUrl, labeliconSettings),
+                iconAnchor  : [0, 0],
+                iconSize    : [markerradius || defaultMarkerSize, markerradius || defaultMarkerSize],
+                popupAnchor : [0, 0]
+            });
+            let labelmarkers = L.marker(labellatlng, {icon: labelIcon });
+            return labelmarkers
+        });
+
+        // place markers on map
+        this.labelLayer = L.layerGroup(labelmarkers);
+        this.map.addLayer(this.labelLayer);
+    }   
+
     private drawLines() {
         if (this.polylineLayer) this.map.removeLayer(this.polylineLayer);
         const { defaultLineColor } = this.settings.leafletMap;
         //Test Adding PolyLine
-    
-
+ 
         const lines = this.plots.map(function ({latitude, longitude, tolatitude, tolongitude,linecolor,linewidth,linetooltips}) {
+
+            if (!latitude || !longitude || !tolatitude || !tolongitude){
+                //One of the items is missing so no lines to draw
+                return L.polyline([L.latLng([0, 0]),L.latLng([0, 0])]);
+            }
+
             var platlng1 = L.latLng([latitude, longitude]);
             var platlng2 = L.latLng([tolatitude, tolongitude]);
             const linelist=[platlng1,platlng2];
             const lineOptions: L.PolylineOptions = { 
-                color: linecolor || (defaultLineColor || 'Blue'),
+                color: linecolor || defaultLineColor,
                 weight: linewidth || 2,
                 fillOpacity: .5
             };
 
             let pmarker = L.polyline(linelist,lineOptions);
-            pmarker.bindTooltip(linetooltips || '[Drag a field onto Line Tooltips]');
-//            bindTooltip(<String|HTMLElement|Function|Tooltip> content, <Tooltip options> options?)
+            var mylinetooltip = (linetooltips || 'No Line Tool Tip');
+            pmarker.bindTooltip(String(mylinetooltip));
             return pmarker;
         });
 
@@ -249,6 +338,7 @@ export class Visual implements IVisual {
                         defaultMarkerColor: this.settings.leafletMap.defaultMarkerColor,
                         defaultLineColor: this.settings.leafletMap.defaultLineColor,
                         markerType: this.settings.leafletMap.markerType,
+                        endmarkerType: this.settings.leafletMap.markerType,
                         zoomToFit: this.settings.leafletMap.zoomToFit
                     },
                     propertyInstanceKind: {

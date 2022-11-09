@@ -1,4 +1,6 @@
 {
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true,
     "privileges": [
         {
             "name": "WebAccess",
@@ -9,7 +11,14 @@
     "dataRoles": [
         {
             "displayName": "Marker Tooltips",
+            "description": "Text which will show when you hover over a map point",
             "name": "tooltips",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Marker Label",
+            "description": "Text which will show on map under map point",
+            "name": "markerlabel",
             "kind": "Grouping"
         },
         {
@@ -19,8 +28,14 @@
             "kind": "Grouping"
         },
         {
-            "displayName": "Marker Radius Field",
-            "description": "Set a value for size of the Point in Column",
+            "displayName": "End Marker Color Field",
+            "description": "A different field for the end point. Onle used if you have ToLat/Lon Fields",
+            "name": "endmarkercolor",
+            "kind": "Grouping"
+        },
+        {
+            "displayName": "Marker Size Field",
+            "description": "Set a field to change the value for radius of the Circle or size of the Icon",
             "name": "markerradius",
             "kind": "Grouping",
             "requiredTypes": [
@@ -92,12 +107,24 @@
             "kind": "Grouping"
         },
         {
-            "displayName": "Icon From Table",
+            "displayName": "Start Icon From Table",
             "description": "Have a Different SVG in Each Row will use Default if nothing in Row",
             "name": "iconsvgfield",
             "kind": "Grouping"
+         },
+         {
+            "displayName": "End Point Icon From Table",
+            "description": "Have a Different SVG in Each Row will use Default if nothing in Row",
+            "name": "endiconsvgfield",
+            "kind": "Grouping"
+         },
+         {
+            "displayName": "Icon Options From Field",
+            "description": "If you want to include a special option for each marker (defined in SVG) Include it here. Must be in JSON Format. ",
+            "name": "iconOptionsFromField",
+            "kind": "Grouping"
          }
-
+         
     ],
     "objects": {
         "leafletMap": {
@@ -114,6 +141,16 @@
                         }
                     }
                 },
+                "defaultMarkerSize": {
+                    "displayName": "Default Marker Size px",
+                    "description": "The Default Size in Points of the Circle Marker or Icon",
+                    "type": { "numeric": true }
+                },
+                "defaultMarkerOpacity": {
+                    "displayName": "Default Marker Opacity %",
+                    "description": "The Default Opacity of Markers",
+                    "type": { "numeric":true }
+                },
                 "defaultLineColor": {
                     "displayName": "Default color for lines",
                     "description": "Use a Different Column than For Markers",
@@ -126,13 +163,13 @@
                     }
                 },
                 "markerType": {
-                    "displayName": "Type of Marker to Show",
+                    "displayName": "Start Marker Type",
                     "type": {
                         "enumeration": [
                             {
                                 "value": "circleMarker",
                                 "displayName": "Circle Marker",
-                                "displayNameKey": "Visual_Marker_Circle"
+                                "displayNameKey": "Visual_Marker_Circle1"
                             },
                             {
                                 "value": "customMarker1",
@@ -144,11 +181,36 @@
                                 "value": "markerFromField",
                                 "displayName": "Icon from Field (Column) In Sheet",
                                 "description": "SVG Field Do not have any ajdustable fields or Line Breaks in the SVG. Make sure the Definition uses single Quotes,  - See Help",
-                                "displayNameKey": "Visual_Marker_URL"
+                                "displayNameKey": "Visual_Marker_URL1"
                             }
                         ]
                     }
                 },
+                "endmarkerType": {
+                    "displayName": "End Marker Type (if They Exist)",
+                    "type": {
+                        "enumeration": [
+                            {
+                                "value": "circleMarker",
+                                "displayName": "Circle Marker",
+                                "displayNameKey": "Visual_Marker_Circle2"
+                            },
+                            {
+                                "value": "customMarker1",
+                                "displayName": "Default Icon",
+                                "description": "Basic Custom Icon",
+                                "displayNameKey": "Visual_Marker_Custom2"
+                            },
+                            {
+                                "value": "markerFromField",
+                                "displayName": "Icon from Field (Column) In Sheet",
+                                "description": "SVG Field Do not have any ajdustable fields or Line Breaks in the SVG. Make sure the Definition uses single Quotes,  - See Help",
+                                "displayNameKey": "Visual_Marker_URL2"
+                            }
+                        ]
+                    }
+                },
+
                 "zoomToFit": {
                     "displayName": "Zoom map to fit data points",
                     "type": {
@@ -163,63 +225,21 @@
             "table": {
                 "rows": {
                     "select": [
-                        {
-                            "for": {
-                                "in": "tooltips"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "latitude"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "longitude"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "tolatitude"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "tolongitude"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "markercolor"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "linecolor"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "markerradius"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "linewidth"
-                            }
-                        },
-                        {
-                            "for": {
-                                "in": "linetooltips"
-                            }
-                        }
-                        ,
-                        {
-                            "for": {
-                                "in": "iconsvgfield"
-                            }
-                        }
-
+                        { "for": { "in": "tooltips" } },
+                        { "for": { "in": "markerlabel"} },
+                        { "for": { "in": "latitude" } },
+                        { "for": { "in": "longitude"} },
+                        { "for": { "in": "tolatitude"} },
+                        { "for": { "in": "tolongitude"} },
+                        { "for": { "in": "markercolor"} },
+                        { "for": { "in": "endmarkercolor"} },
+                        { "for": { "in": "linecolor"} },
+                        { "for": { "in": "markerradius"} },
+                        { "for": { "in": "linewidth"} },
+                        { "for": { "in": "linetooltips"} },
+                        { "for": { "in": "iconsvgfield"} },
+                        { "for": { "in": "endiconsvgfield"} },
+                        { "for": { "in": "iconOptionsFromField" } }
                     ]
                 }
             }
